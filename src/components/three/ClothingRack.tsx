@@ -100,7 +100,7 @@ const Garment = ({ product, index, total, activeDiff, onClick }: GarmentProps) =
         <meshStandardMaterial 
           ref={materialRef}
           transparent={true}
-          alphaTest={0.05}
+          blending={THREE.MultiplyBlending}
           side={THREE.DoubleSide}
           color={texture ? '#ffffff' : (product.colorHex || '#d8d3cb')}
           map={texture}
