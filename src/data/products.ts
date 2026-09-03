@@ -35,9 +35,7 @@ export const rackProducts: Product[] = [
       '/images/products/alina-selyem-midi-ruha/view-3.webp',
     ],
     transparentGarmentImage: '/images/products/alina-selyem-midi-ruha/transparent.webp',
-    viewerAssets: Array.from({ length: 12 }, (_, i) =>
-      `/images/products/alina-selyem-midi-ruha/rotate-${String(i + 1).padStart(2, '0')}.webp`
-    ),
+    viewerAssets: [],
     featured: true,
     detailAvailable: true,
     collection: '01 — Nyár',
@@ -73,9 +71,7 @@ export const rackProducts: Product[] = [
       '/images/products/mira-noi-szett/view-3.webp',
     ],
     transparentGarmentImage: '/images/products/mira-noi-szett/transparent.webp',
-    viewerAssets: Array.from({ length: 12 }, (_, i) =>
-      `/images/products/mira-noi-szett/rotate-${String(i + 1).padStart(2, '0')}.webp`
-    ),
+    viewerAssets: [],
     featured: true,
     detailAvailable: true,
     collection: '01 — Nyár',
@@ -111,9 +107,7 @@ export const rackProducts: Product[] = [
       '/images/products/lilla-pliszirozott-ruha/view-3.webp',
     ],
     transparentGarmentImage: '/images/products/lilla-pliszirozott-ruha/transparent.webp',
-    viewerAssets: Array.from({ length: 12 }, (_, i) =>
-      `/images/products/lilla-pliszirozott-ruha/rotate-${String(i + 1).padStart(2, '0')}.webp`
-    ),
+    viewerAssets: [],
     featured: false,
     detailAvailable: true,
     collection: '01 — Nyár',
@@ -149,9 +143,7 @@ export const rackProducts: Product[] = [
       '/images/products/nora-gyapjukabat/view-3.webp',
     ],
     transparentGarmentImage: '/images/products/nora-gyapjukabat/transparent.webp',
-    viewerAssets: Array.from({ length: 12 }, (_, i) =>
-      `/images/products/nora-gyapjukabat/rotate-${String(i + 1).padStart(2, '0')}.webp`
-    ),
+    viewerAssets: [],
     featured: false,
     detailAvailable: true,
     collection: '01 — Nyár',
@@ -187,9 +179,7 @@ export const rackProducts: Product[] = [
       '/images/products/reka-kotott-szett/view-3.webp',
     ],
     transparentGarmentImage: '/images/products/reka-kotott-szett/transparent.webp',
-    viewerAssets: Array.from({ length: 12 }, (_, i) =>
-      `/images/products/reka-kotott-szett/rotate-${String(i + 1).padStart(2, '0')}.webp`
-    ),
+    viewerAssets: [],
     featured: false,
     detailAvailable: true,
     collection: '01 — Nyár',
@@ -225,9 +215,7 @@ export const rackProducts: Product[] = [
       '/images/products/sara-strukturalt-blezer/view-3.webp',
     ],
     transparentGarmentImage: '/images/products/sara-strukturalt-blezer/transparent.webp',
-    viewerAssets: Array.from({ length: 12 }, (_, i) =>
-      `/images/products/sara-strukturalt-blezer/rotate-${String(i + 1).padStart(2, '0')}.webp`
-    ),
+    viewerAssets: [],
     featured: false,
     detailAvailable: true,
     collection: '01 — Nyár',
@@ -263,9 +251,7 @@ export const rackProducts: Product[] = [
       '/images/products/dora-szaten-szett/view-3.webp',
     ],
     transparentGarmentImage: '/images/products/dora-szaten-szett/transparent.webp',
-    viewerAssets: Array.from({ length: 12 }, (_, i) =>
-      `/images/products/dora-szaten-szett/rotate-${String(i + 1).padStart(2, '0')}.webp`
-    ),
+    viewerAssets: [],
     featured: false,
     detailAvailable: true,
     collection: '01 — Nyár',
@@ -301,9 +287,7 @@ export const rackProducts: Product[] = [
       '/images/products/hanna-minimalista-top/view-3.webp',
     ],
     transparentGarmentImage: '/images/products/hanna-minimalista-top/transparent.webp',
-    viewerAssets: Array.from({ length: 12 }, (_, i) =>
-      `/images/products/hanna-minimalista-top/rotate-${String(i + 1).padStart(2, '0')}.webp`
-    ),
+    viewerAssets: [],
     featured: false,
     detailAvailable: true,
     collection: '01 — Nyár',
@@ -339,9 +323,7 @@ export const rackProducts: Product[] = [
       '/images/products/boglarka-nadragos-szett/view-3.webp',
     ],
     transparentGarmentImage: '/images/products/boglarka-nadragos-szett/transparent.webp',
-    viewerAssets: Array.from({ length: 12 }, (_, i) =>
-      `/images/products/boglarka-nadragos-szett/rotate-${String(i + 1).padStart(2, '0')}.webp`
-    ),
+    viewerAssets: [],
     featured: false,
     detailAvailable: true,
     collection: '01 — Nyár',
@@ -377,9 +359,7 @@ export const rackProducts: Product[] = [
       '/images/products/virag-trench-coat/view-3.webp',
     ],
     transparentGarmentImage: '/images/products/virag-trench-coat/transparent.webp',
-    viewerAssets: Array.from({ length: 12 }, (_, i) =>
-      `/images/products/virag-trench-coat/rotate-${String(i + 1).padStart(2, '0')}.webp`
-    ),
+    viewerAssets: [],
     featured: true,
     detailAvailable: true,
     collection: '01 — Nyár',
@@ -788,3 +768,4 @@ export function getProductBySlug(slug: string): Product | undefined {
 export function getDetailProducts(): Product[] {
   return allProducts.filter((p) => p.detailAvailable)
 }
+

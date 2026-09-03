@@ -40,20 +40,23 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
   const scroll = (direction: 'left' | 'right') => {
     const el = scrollRef.current
     if (!el) return
-    const cardWidth = el.querySelector(':scope > div')?.clientWidth ?? 300
+    const cardWidth = el.querySelector(':scope > div')?.clientWidth ?? 260
     const distance = cardWidth + 16
     el.scrollBy({ left: direction === 'left' ? -distance : distance, behavior: 'smooth' })
   }
 
   /* ── drag-to-scroll ── */
   const isDragging = useRef(false)
+  const hasDragged = useRef(false)
   const startX = useRef(0)
   const scrollStart = useRef(0)
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
     const el = scrollRef.current
     if (!el) return
     isDragging.current = true
+    hasDragged.current = false
     startX.current = e.clientX
     scrollStart.current = el.scrollLeft
     el.style.cursor = 'grabbing'
@@ -65,6 +68,9 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
     const el = scrollRef.current
     if (!el) return
     const dx = e.clientX - startX.current
+    if (Math.abs(dx) > 5) {
+      hasDragged.current = true
+    }
     el.scrollLeft = scrollStart.current - dx
   }
 
@@ -76,13 +82,22 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
       el.releasePointerCapture(e.pointerId)
     }
   }
+  
+  const handleCardClick = (product: Product, e: React.MouseEvent) => {
+    if (hasDragged.current) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
+    setSelectedProduct(product)
+  }
 
   return (
-    <section id={id} className="py-16 lg:py-24">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id={id} className="py-12 lg:py-16">
+      <div className="max-w-7xl mx-auto px-4 md:px-6">
         {/* Title */}
         <motion.h2
-          className="font-serif text-2xl md:text-3xl text-graphite mb-10"
+          className="font-serif text-2xl md:text-3xl text-graphite mb-8"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-50px' }}
@@ -97,7 +112,7 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
           {canScrollLeft && (
             <button
               onClick={() => scroll('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full border border-stone/40 bg-ivory/90 backdrop-blur-sm flex items-center justify-center text-graphite hover:bg-champagne/20 transition-all opacity-0 group-hover/row:opacity-100 -translate-x-2"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full border border-stone/40 bg-ivory/90 backdrop-blur-sm flex items-center justify-center text-graphite hover:bg-champagne/20 transition-all opacity-0 group-hover/row:opacity-100 -translate-x-2 shadow-sm"
               aria-label="Előző termékek"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -110,7 +125,7 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
           {canScrollRight && (
             <button
               onClick={() => scroll('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full border border-stone/40 bg-ivory/90 backdrop-blur-sm flex items-center justify-center text-graphite hover:bg-champagne/20 transition-all opacity-0 group-hover/row:opacity-100 translate-x-2"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full border border-stone/40 bg-ivory/90 backdrop-blur-sm flex items-center justify-center text-graphite hover:bg-champagne/20 transition-all opacity-0 group-hover/row:opacity-100 translate-x-2 shadow-sm"
               aria-label="Következő termékek"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -122,8 +137,8 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
           {/* Scroll container */}
           <div
             ref={scrollRef}
-            className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory cursor-grab select-none pb-4"
-            style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+            className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory cursor-grab touch-pan-y pb-6"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -132,23 +147,25 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
             {products.map((product, index) => (
               <motion.div
                 key={product.id}
-                className="flex-shrink-0 w-[260px] md:w-[280px] lg:w-[300px] snap-start"
+                className="flex-shrink-0 w-[78vw] md:w-[260px] lg:w-[280px] snap-start"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-30px' }}
-                transition={{ duration: 0.5, delay: index * 0.08 }}
+                transition={{ duration: 0.5, delay: index * 0.05 }}
               >
-                <ProductCard product={product} onClick={() => setSelectedProduct(product)} />
+                <div onClick={(e) => handleCardClick(product, e)} className="h-full">
+                  <ProductCard product={product} onClick={() => {}} />
+                </div>
               </motion.div>
             ))}
           </div>
 
           {/* Fade edges */}
           {canScrollLeft && (
-            <div className="absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-cream to-transparent pointer-events-none z-[5]" />
+            <div className="absolute left-0 top-0 bottom-6 w-8 md:w-12 bg-gradient-to-r from-cream to-transparent pointer-events-none z-[5]" />
           )}
           {canScrollRight && (
-            <div className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-cream to-transparent pointer-events-none z-[5]" />
+            <div className="absolute right-0 top-0 bottom-6 w-8 md:w-12 bg-gradient-to-l from-cream to-transparent pointer-events-none z-[5]" />
           )}
         </div>
       </div>
