@@ -45,20 +45,33 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
     el.scrollBy({ left: direction === 'left' ? -distance : distance, behavior: 'smooth' })
   }
 
-  /* ── drag-to-scroll ── */
+  /* ── Free drag-to-scroll with momentum ── */
   const isDragging = useRef(false)
   const hasDragged = useRef(false)
   const startX = useRef(0)
   const scrollStart = useRef(0)
+  
+  // Momentum variables
+  const lastClientX = useRef(0)
+  const velocity = useRef(0)
+  const momentumId = useRef<number>(0)
+  const timestamp = useRef<number>(0)
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     const el = scrollRef.current
     if (!el) return
+    
+    cancelAnimationFrame(momentumId.current)
+    
     isDragging.current = true
     hasDragged.current = false
     startX.current = e.clientX
+    lastClientX.current = e.clientX
     scrollStart.current = el.scrollLeft
+    timestamp.current = performance.now()
+    velocity.current = 0
+    
     el.style.cursor = 'grabbing'
     el.setPointerCapture(e.pointerId)
   }
@@ -67,19 +80,51 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
     if (!isDragging.current) return
     const el = scrollRef.current
     if (!el) return
+    
     const dx = e.clientX - startX.current
     if (Math.abs(dx) > 5) {
       hasDragged.current = true
     }
+    
     el.scrollLeft = scrollStart.current - dx
+    
+    // Calculate velocity for momentum
+    const now = performance.now()
+    const dt = now - timestamp.current
+    const dxMove = e.clientX - lastClientX.current
+    
+    if (dt > 0) {
+      velocity.current = dxMove / dt
+    }
+    
+    lastClientX.current = e.clientX
+    timestamp.current = now
+  }
+
+  const applyMomentum = () => {
+    const el = scrollRef.current
+    if (!el) return
+    
+    if (Math.abs(velocity.current) > 0.05) {
+      el.scrollLeft -= velocity.current * 16 // roughly 1 frame at 60fps
+      velocity.current *= 0.95 // Friction
+      momentumId.current = requestAnimationFrame(applyMomentum)
+    }
   }
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging.current) return
     isDragging.current = false
+    
     const el = scrollRef.current
     if (el) {
       el.style.cursor = 'grab'
       el.releasePointerCapture(e.pointerId)
+      
+      // Only apply momentum if the last move was recent
+      if (performance.now() - timestamp.current < 100) {
+        momentumId.current = requestAnimationFrame(applyMomentum)
+      }
     }
   }
   
@@ -137,7 +182,7 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
           {/* Scroll container */}
           <div
             ref={scrollRef}
-            className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory cursor-grab touch-pan-y pb-6"
+            className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide cursor-grab touch-pan-y pb-6"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
@@ -147,7 +192,7 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
             {products.map((product, index) => (
               <motion.div
                 key={product.id}
-                className="flex-shrink-0 w-[78vw] md:w-[260px] lg:w-[280px] snap-start"
+                className="flex-shrink-0 w-[78vw] md:w-[260px] lg:w-[280px]"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-30px' }}
@@ -162,10 +207,10 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
 
           {/* Fade edges */}
           {canScrollLeft && (
-            <div className="absolute left-0 top-0 bottom-6 w-8 md:w-12 bg-gradient-to-r from-cream to-transparent pointer-events-none z-[5]" />
+            <div className="absolute left-0 top-0 bottom-6 w-8 md:w-12 bg-gradient-to-r from-ivory to-transparent pointer-events-none z-[5]" />
           )}
           {canScrollRight && (
-            <div className="absolute right-0 top-0 bottom-6 w-8 md:w-12 bg-gradient-to-l from-cream to-transparent pointer-events-none z-[5]" />
+            <div className="absolute right-0 top-0 bottom-6 w-8 md:w-12 bg-gradient-to-l from-ivory to-transparent pointer-events-none z-[5]" />
           )}
         </div>
       </div>

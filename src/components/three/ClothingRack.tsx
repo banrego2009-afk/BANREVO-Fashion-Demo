@@ -17,6 +17,30 @@ const RACK_RADIUS = 2.8
 const RING_HEIGHT = 2.5
 const ITEM_HEIGHT = 1.0
 
+const Hanger = () => (
+  <group position={[0, 1.35, 0]}>
+    {/* Hook */}
+    <mesh position={[0, 0.12, 0]} rotation={[0, 0, -Math.PI / 4]}>
+      <torusGeometry args={[0.05, 0.01, 8, 24, Math.PI * 1.5]} />
+      <meshStandardMaterial color="#D4C5A9" metalness={1.0} roughness={0.15} />
+    </mesh>
+    {/* Neck */}
+    <mesh position={[0, 0.03, 0]}>
+      <cylinderGeometry args={[0.01, 0.01, 0.08, 8]} />
+      <meshStandardMaterial color="#D4C5A9" metalness={1.0} roughness={0.15} />
+    </mesh>
+    {/* Shoulders */}
+    <mesh position={[-0.3, -0.05, 0]} rotation={[0, 0, Math.PI / 2 + 0.15]}>
+      <cylinderGeometry args={[0.01, 0.01, 0.6, 8]} />
+      <meshStandardMaterial color="#D4C5A9" metalness={1.0} roughness={0.15} />
+    </mesh>
+    <mesh position={[0.3, -0.05, 0]} rotation={[0, 0, Math.PI / 2 - 0.15]}>
+      <cylinderGeometry args={[0.01, 0.01, 0.6, 8]} />
+      <meshStandardMaterial color="#D4C5A9" metalness={1.0} roughness={0.15} />
+    </mesh>
+  </group>
+)
+
 interface GarmentProps {
   product: Product
   index: number
@@ -54,32 +78,25 @@ const Garment = ({ product, index, total, activeDiff, onClick }: GarmentProps) =
       targetScale = 1.0
       targetOpacity = 1.0
     } else if (activeDiff === 1) {
-      targetScale = 0.9
-      targetOpacity = 0.85
+      targetScale = 0.95
+      targetOpacity = 0.9
     } else if (activeDiff === 2) {
-      targetScale = 0.75
-      targetOpacity = 0.65
+      targetScale = 0.85
+      targetOpacity = 0.7
     } else {
-      targetScale = 0.65
-      targetOpacity = 0.45
+      targetScale = 0.75
+      targetOpacity = 0.5
     }
 
     meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1)
     materialRef.current.opacity = THREE.MathUtils.lerp(materialRef.current.opacity, targetOpacity, 0.1)
-    
-    meshRef.current.lookAt(new THREE.Vector3(x * 2, ITEM_HEIGHT, z * 2))
   })
 
   return (
-    <group position={[x, ITEM_HEIGHT, z]}>
-      {/* Hanger wire — thin cylinder */}
-      <mesh position={[0, (RING_HEIGHT - ITEM_HEIGHT + 0.9) / 2, 0]}>
-        <cylinderGeometry args={[0.005, 0.005, RING_HEIGHT - ITEM_HEIGHT - 0.9, 4]} />
-        <meshStandardMaterial color="#B8A98F" metalness={0.9} roughness={0.1} />
-      </mesh>
-
-      <mesh ref={meshRef} onClick={onClick}>
-        <planeGeometry args={[1.5, 2.25]} />
+    <group position={[x, ITEM_HEIGHT, z]} rotation={[0, angle, 0]}>
+      <Hanger />
+      <mesh ref={meshRef} onClick={onClick} position={[0, 0.1, 0]}>
+        <planeGeometry args={[1.6, 2.4]} />
         <meshStandardMaterial 
           ref={materialRef}
           transparent={true}
@@ -157,7 +174,7 @@ function Scene({ products, activeIndex, onActiveChange }: ClothingRackProps) {
         s.rotationVelocity *= 0.95
         needsInvalidate = true
       } else if (s.autoRotate) {
-        groupRef.current.rotation.y += 0.002
+        groupRef.current.rotation.y += 0.0015
         needsInvalidate = true
       }
     }
@@ -178,7 +195,6 @@ function Scene({ products, activeIndex, onActiveChange }: ClothingRackProps) {
     }
   })
 
-  // Optionally snap rotation when activeIndex is changed externally (e.g. arrows)
   useEffect(() => {
     if (groupRef.current && !stateRef.current.isDragging && Math.abs(stateRef.current.rotationVelocity) < 0.001 && products.length > 0) {
       const segmentAngle = (Math.PI * 2) / products.length
@@ -190,8 +206,8 @@ function Scene({ products, activeIndex, onActiveChange }: ClothingRackProps) {
 
   return (
     <>
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[5, 10, 5]} intensity={1.2} />
+      <ambientLight intensity={0.9} />
+      <directionalLight position={[5, 10, 5]} intensity={1.5} />
       <Environment preset="city" />
       
       <mesh 
@@ -208,7 +224,7 @@ function Scene({ products, activeIndex, onActiveChange }: ClothingRackProps) {
 
       <group ref={groupRef}>
         <mesh position={[0, RING_HEIGHT, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[3, 0.03, 32, 100]} />
+          <torusGeometry args={[RACK_RADIUS, 0.02, 32, 100]} />
           <meshStandardMaterial color="#D4C5A9" metalness={1.0} roughness={0.1} />
         </mesh>
 
@@ -230,7 +246,7 @@ function Scene({ products, activeIndex, onActiveChange }: ClothingRackProps) {
         })}
       </group>
       
-      <ContactShadows position={[0, -0.5, 0]} opacity={0.3} blur={3.0} />
+      <ContactShadows position={[0, -0.5, 0]} opacity={0.25} blur={2.5} />
     </>
   )
 }
@@ -243,7 +259,7 @@ export default function ClothingRack({ products, activeIndex, onActiveChange, is
       <Canvas 
         frameloop="demand" 
         dpr={[1, 1.5]}
-        camera={{ position: [0, 2, 8.5], fov: 45 }}
+        camera={{ position: [0, 2.2, 8.5], fov: 40 }}
       >
         <Scene 
           products={products} 

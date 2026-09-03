@@ -16,12 +16,12 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
     <div
       onClick={onClick}
       onDragStart={(e) => e.preventDefault()}
-      className="group cursor-pointer bg-ivory rounded-sm overflow-hidden hover:shadow-sm transition-shadow duration-300 flex flex-col select-none h-full"
+      className="group cursor-pointer bg-ivory rounded-sm overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 flex flex-col select-none h-full"
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-stone/5 pointer-events-none">
         <motion.div
           className="w-full h-full"
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ scale: 1.03 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
         >
           <FallbackImage
@@ -37,17 +37,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
             style={{ WebkitUserDrag: 'none' } as React.CSSProperties}
           />
         </motion.div>
-        
-        {/* Quick view overlay on hover */}
-        <div className="absolute inset-0 bg-graphite/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center">
-          <motion.div 
-            initial={{ y: 10, opacity: 0 }}
-            whileInView={{ y: 0, opacity: 1 }}
-            className="px-6 py-2 bg-ivory/95 text-graphite text-xs uppercase tracking-widest translate-y-4 group-hover:translate-y-0 transition-all duration-300 backdrop-blur-sm"
-          >
-            Megnézem
-          </motion.div>
-        </div>
       </div>
       <div className="p-4 flex flex-col gap-1 pointer-events-none bg-ivory">
         <span className="text-xs uppercase tracking-widest text-stone-500 font-sans">
