@@ -781,6 +781,9 @@ for (const product of allProducts) {
   if (product.slug === 'alina-selyem-midi-ruha') {
     product.transparentGarmentImage = '/images/collection-2026/alina-selyem-midi-ruha/cutout.webp'
   }
+  if (product.group === 'rack') {
+    product.transparentGarmentImage = `/images/collection-2026/${product.slug}/cutout.webp`
+  }
 }
 
 export function getProductBySlug(slug: string): Product | undefined {

@@ -10,53 +10,64 @@
     },
     {
       "slug": "mira-noi-szett",
+      "cutout": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-588a2cce-bc0d-4946-afd6-c947851fa5d0.png",
       "desc": "warm stone-grey tailored two-piece suit, relaxed single-breasted notched lapel blazer with two buttons, straight high-waisted full-length trousers, ivory camisole underneath",
       "front": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-77ac6a61-2cb5-4aa4-b2ef-60520ddeff0f.png"
     },
     {
       "slug": "lilla-pliszirozott-ruha",
+      "cutout": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-4eb70c73-6620-4346-9f1b-2d4c27c3c69a.png",
       "desc": "dusty blush pink sleeveless pleated midi dress, neat round neck, gently fitted waist, fine pleats flowing in A-line skirt",
       "front": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-8b28ddd7-1ff8-4e36-89ac-ef0352b8930d.png",
       "frontPrompt": "Use case: identity-preserve. Create ONE photorealistic premium ATELIER N°10 ecommerce product photo. Reference is the EXACT model identity and photo style anchor. Preserve her facial identity, olive skin, straight shoulder-length dark brown hair centre-part tucked behind ears, proportions and minimal makeup. Change only outfit to: dusty blush pink sleeveless pleated midi dress, neat round neck, gently fitted waist, fine pleats flowing in A-line skirt. Full head-to-feet frontal standing pose, hands relaxed slightly away from garment, ivory minimal low slingback shoes, realistic fabric and stitching. Same seamless pure white studio background and soft front-left light. Portrait 2:3, full body within frame with small top/bottom margins, same scale as reference. ONE woman, ONE outfit. No props, no set, no text/logo/watermark, no extra accessories. Product must exactly match description; model is same woman photographed same day."
     },
     {
       "slug": "nora-gyapjukabat",
+      "cutout": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-3f7d67ea-536b-4a1d-b054-174bed6e26c0.png",
+      "cutoutNeutralBackdrop": true,
       "desc": "sand beige lightweight wool coat, clean straight relaxed cut, concealed front buttons, refined small notched collar, length just above knees, ivory separates beneath",
       "front": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-19684c49-8a59-490c-9856-9c609c260657.png",
       "frontPrompt": "Use case: identity-preserve. Create ONE photorealistic premium ATELIER N°10 ecommerce product photo. Reference is the EXACT model identity and photo style anchor. Preserve her facial identity, olive skin, straight shoulder-length dark brown hair centre-part tucked behind ears, proportions and minimal makeup. Change only outfit to: sand beige lightweight wool coat, clean straight relaxed cut, concealed front buttons, refined small notched collar, length just above knees, ivory separates beneath. Full head-to-feet frontal standing pose, hands relaxed slightly away from garment, ivory minimal low slingback shoes, realistic fabric and stitching. Same seamless pure white studio background and soft front-left light. Portrait 2:3, full body within frame with small top/bottom margins, same scale as reference. ONE woman, ONE outfit. No props, no set, no text/logo/watermark, no extra accessories. Product must exactly match description; model is same woman photographed same day."
     },
     {
       "slug": "reka-kotott-szett",
+      "cutout": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-ad5b42e5-751e-4384-a575-ff2cbcf118ea.png",
       "desc": "cream fine merino knit two-piece SET: relaxed slightly cropped long sleeve crewneck sweater and matching straight MIDI SKIRT, visible fine rib knit texture, NOT trousers",
       "front": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-148f4b47-5519-4dd2-9a4a-564f424c42b6.png",
       "frontPrompt": "Use case: identity-preserve. Create ONE photorealistic premium ATELIER N°10 ecommerce product photo. Reference is the EXACT model identity and photo style anchor. Preserve her facial identity, olive skin, straight shoulder-length dark brown hair centre-part tucked behind ears, proportions and minimal makeup. Change only outfit to: cream fine merino knit two-piece SET: relaxed slightly cropped long sleeve crewneck sweater and matching straight MIDI SKIRT, visible fine rib knit texture, NOT trousers. Full head-to-feet frontal standing pose, hands relaxed slightly away from garment, ivory minimal low slingback shoes, realistic fabric and stitching. Same seamless pure white studio background and soft front-left light. Portrait 2:3, full body within frame with small top/bottom margins, same scale as reference. ONE woman, ONE outfit. No props, no set, no text/logo/watermark, no extra accessories. Product must exactly match description; model is same woman photographed same day."
     },
     {
       "slug": "sara-strukturalt-blezer",
+      "cutout": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-f0384154-034d-4ddc-8e7d-791474ed1df5.png",
       "desc": "charcoal anthracite structured feminine tailored blazer, single button, softly defined waist, hip-length, sharp notched lapels, styled with understated ivory straight trousers and ivory camisole",
       "front": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-451d996a-09dc-4e7f-bd84-81d4b71090bb.png",
       "frontPrompt": "Use case: identity-preserve. Same exact fictional adult woman from reference wearing charcoal anthracite structured feminine tailored blazer, single button, softly defined waist, hip-length, sharp notched lapels, styled with understated ivory straight trousers and ivory camisole. Preserve face, dark centre-part hair tucked behind ears, olive skin, proportions, same studio lighting. Full head-to-feet front view, hands relaxed, portrait 2:3, seamless clean pure white studio background, ivory slingback heels, no props, no text, premium sharp fashion ecommerce photography."
     },
     {
       "slug": "dora-szaten-szett",
+      "cutout": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-2b2e25f7-2d09-4501-b77d-55c57ca03297.png",
+      "cutoutNeutralBackdrop": true,
       "desc": "ivory matte satin two-piece SET, relaxed sleeveless boat-neck top and matching flowing A-line midi skirt, elegant refined soft satin sheen",
       "front": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-d4901ab9-fd75-4357-83a3-b901099e992f.png",
       "frontPrompt": "Use case: identity-preserve. Single photorealistic premium fashion ecommerce photo, portrait 2:3. Dress the EXACT fictional adult woman in reference in this outfit: ivory matte satin two-piece SET, relaxed sleeveless boat-neck top and matching flowing A-line midi skirt, elegant refined soft satin sheen. Keep precisely same face, shoulder-length centre-part dark brown hair behind ears, olive skin, proportions, minimal makeup, pure white seamless studio and soft lighting. Full head-to-feet straight front standing pose, hands relaxed, same framing as reference, ivory low slingback heels. Sharp realistic fabric details. One model one outfit, no props, no text/logo/watermark."
     },
     {
       "slug": "hanna-minimalista-top",
+      "cutout": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-bb47d21f-8065-4940-b421-b550e793457d.png",
       "desc": "clean white organic cotton sleeveless high round-neck minimal top, straight slightly relaxed waist-length fit, styled with warm stone-grey tailored trousers",
       "front": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-8e5bb6ad-f9f8-4ce1-83d9-6f82d395a55a.png",
       "frontPrompt": "Use case: identity-preserve. Single photorealistic premium fashion ecommerce photo, portrait 2:3. Dress the EXACT fictional adult woman in reference in this outfit: clean white organic cotton sleeveless high round-neck minimal top, straight slightly relaxed waist-length fit, styled with warm stone-grey tailored trousers. Keep precisely same face, shoulder-length centre-part dark brown hair behind ears, olive skin, proportions, minimal makeup, pure white seamless studio and soft lighting. Full head-to-feet straight front standing pose, hands relaxed, same framing as reference, ivory low slingback heels. Sharp realistic fabric details. One model one outfit, no props, no text/logo/watermark."
     },
     {
       "slug": "boglarka-nadragos-szett",
+      "cutout": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-e6bb19ff-fa38-4a80-b25c-a1ff7c9fd7c6.png",
       "desc": "deep warm beige two-piece set of full-length high-waisted straight trousers and matching short-sleeve softly draped blouse, refined modern relaxed tailoring",
       "front": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-f33fab1a-536b-4cd4-895a-c039f0162e11.png",
       "frontPrompt": "Use case: identity-preserve. Single photorealistic premium fashion ecommerce photo, portrait 2:3. Dress the EXACT fictional adult woman in reference in this outfit: deep warm beige two-piece set of full-length high-waisted straight trousers and matching short-sleeve softly draped blouse, refined modern relaxed tailoring. Keep precisely same face, shoulder-length centre-part dark brown hair behind ears, olive skin, proportions, minimal makeup, pure white seamless studio and soft lighting. Full head-to-feet straight front standing pose, hands relaxed, same framing as reference, ivory low slingback heels. Sharp realistic fabric details. One model one outfit, no props, no text/logo/watermark."
     },
     {
       "slug": "virag-trench-coat",
+      "cutout": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-cfe24178-cfac-4d52-b920-3185aa8d4f65.png",
       "desc": "camel lightweight classic trench coat, sophisticated notched collar, concealed buttons, removable self-fabric tied waist belt, storm flap, straight below-knee cut, ivory understated clothes beneath",
       "front": "C:\\Users\\banre\\.codex\\generated_images\\01a01bca-6539-7f01-abcf-dfda12ac5d8e\\exec-8de3d824-9695-45b3-af43-8e6e5139fc2c.png",
       "frontPrompt": "Use case: identity-preserve. Single photorealistic premium fashion ecommerce photo, portrait 2:3. Dress the EXACT fictional adult woman in reference in this outfit: camel lightweight classic trench coat, sophisticated notched collar, concealed buttons, removable self-fabric tied waist belt, storm flap, straight below-knee cut, ivory understated clothes beneath. Keep precisely same face, shoulder-length centre-part dark brown hair behind ears, olive skin, proportions, minimal makeup, pure white seamless studio and soft lighting. Full head-to-feet straight front standing pose, hands relaxed, same framing as reference, ivory low slingback heels. Sharp realistic fabric details. One model one outfit, no props, no text/logo/watermark."
