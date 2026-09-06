@@ -768,7 +768,9 @@ const completedStudioImages = new Set([
   'nora-gyapjukabat', 'reka-kotott-szett', 'sara-strukturalt-blezer',
   'dora-szaten-szett', 'hanna-minimalista-top', 'boglarka-nadragos-szett',
   'virag-trench-coat', 'aria-bor-szandal', 'luna-bortaska',
-  'sofia-bor-ov', 'elena-napszemuveg',
+  'sofia-bor-ov', 'elena-napszemuveg', 'emma-len-ruha',
+  'petra-pamut-polo', 'zsoka-wrapdress', 'kata-kasmirkardigan',
+  'juli-szeles-nadrag', 'anna-selyembluz',
 ])
 
 for (const product of allProducts) {
