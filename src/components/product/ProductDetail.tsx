@@ -20,12 +20,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     >
       <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
         <div className="w-full">
-          <ProductViewer product={product} />
+          <ProductViewer product={product} eager />
         </div>
         
         <div className="flex flex-col w-full">
           <Link 
-            href="/#collection" 
+            href={product.group === 'accessories' ? '/#accessories' : product.group === 'collection' ? '/#women' : '/#collection'}
             className="inline-flex items-center text-sm text-graphite/60 hover:text-graphite transition-colors mb-8"
           >
             ← Vissza a kollekcióhoz
@@ -102,6 +102,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 </span>
               </div>
             )}
+            <p className="text-xs leading-relaxed text-graphite/50">
+              Bemutatókollekció. Online rendelés egyelőre nem érhető el.
+            </p>
           </div>
         </div>
       </div>

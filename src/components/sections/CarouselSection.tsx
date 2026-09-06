@@ -51,21 +51,17 @@ export default function CarouselSection({ products }: CarouselSectionProps) {
     setActiveIndex(index)
   }, [])
 
-  /* Check for WebGL availability */
-  const hasWebGL = useMemo(() => {
-    if (typeof window === 'undefined') return true
-    try {
-      const canvas = document.createElement('canvas')
-      return !!(canvas.getContext('webgl2') || canvas.getContext('webgl'))
-    } catch {
-      return false
-    }
-  }, [])
-
-  const showFallback = isMobile || !hasWebGL
-
   return (
-    <section id="collection" className="py-12 lg:py-20 relative" ref={containerRef}>
+    <section
+      id="collection"
+      className="py-12 lg:py-20 relative"
+      ref={containerRef}
+      aria-label="A tízdarabos kollekció"
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowLeft') { event.preventDefault(); handlePrev() }
+        if (event.key === 'ArrowRight') { event.preventDefault(); handleNext() }
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4">
         {/* Section heading */}
         <motion.div
@@ -85,19 +81,21 @@ export default function CarouselSection({ products }: CarouselSectionProps) {
 
         {/* Rack container */}
         <div className="relative">
-          {showFallback ? (
+          {isMobile ? (
             <ClothingRackFallback
               products={products}
               activeIndex={activeIndex}
               onActiveChange={handleActiveChange}
+              onOpenProduct={setQuickViewProduct}
               isVisible={isVisible}
             />
           ) : (
-            <div className="w-full" style={{ height: 'min(65vh, 600px)' }}>
+            <div className="w-full" style={{ height: 'clamp(420px, 65vh, 600px)' }}>
               <ClothingRack
                 products={products}
                 activeIndex={activeIndex}
                 onActiveChange={handleActiveChange}
+                onOpenProduct={setQuickViewProduct}
                 isVisible={isVisible}
               />
             </div>
@@ -150,12 +148,12 @@ export default function CarouselSection({ products }: CarouselSectionProps) {
             </div>
 
             {/* Dot indicators */}
-            <div className="flex gap-1.5 justify-center pt-4" role="tablist" aria-label="Termékek">
+            <div className="flex gap-1.5 justify-center pt-4" role="group" aria-label="Termék választása">
               {products.map((_, i) => (
                 <button
                   key={i}
-                  role="tab"
-                  aria-selected={i === activeIndex}
+                  type="button"
+                  aria-pressed={i === activeIndex}
                   aria-label={`${products[i].name}`}
                   onClick={() => setActiveIndex(i)}
                   className={`w-2 h-2 rounded-full transition-all duration-300 ${

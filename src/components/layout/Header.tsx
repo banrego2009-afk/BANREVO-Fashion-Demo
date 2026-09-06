@@ -32,9 +32,9 @@ export default function Header() {
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     closeMobileMenu();
     if (href.startsWith("#")) {
-      e.preventDefault();
       const target = document.querySelector(href);
       if (target) {
+        e.preventDefault();
         target.scrollIntoView({ behavior: shouldReduceMotion ? "auto" : "smooth" });
       }
     }
@@ -59,7 +59,7 @@ export default function Header() {
             {brand.nav.map((item) => (
               <Link
                 key={item.label}
-                href={item.href}
+                href={item.href.startsWith("#") ? `/${item.href}` : item.href}
                 onClick={(e) => handleLinkClick(e, item.href)}
                 className="text-sm uppercase tracking-widest font-sans text-graphite/80 hover:text-graphite transition-colors"
               >
@@ -97,7 +97,7 @@ export default function Header() {
               {brand.nav.map((item) => (
                 <Link
                   key={item.label}
-                  href={item.href}
+                  href={item.href.startsWith("#") ? `/${item.href}` : item.href}
                   onClick={(e) => handleLinkClick(e, item.href)}
                   className="font-serif text-3xl text-graphite hover:text-champagne transition-colors"
                 >

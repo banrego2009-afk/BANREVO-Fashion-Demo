@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, type MouseEvent, type PointerEvent } from 'react'
 import { motion } from 'motion/react'
 import type { Product } from '@/types'
 import ProductCard from '@/components/product/ProductCard'
@@ -17,132 +17,124 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
+  const momentumId = useRef(0)
+  const suppressClickUntil = useRef(0)
+  const pointer = useRef({
+    active: false, id: -1, startX: 0, scrollStart: 0, lastX: 0, lastTime: 0, velocity: 0, dragged: false,
+  })
+
+  const stopMomentum = useCallback(() => {
+    cancelAnimationFrame(momentumId.current)
+    momentumId.current = 0
+  }, [])
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current
     if (!el) return
-    setCanScrollLeft(el.scrollLeft > 10)
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10)
+    setCanScrollLeft(el.scrollLeft > 2)
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2)
   }, [])
 
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     checkScroll()
+    const observer = new ResizeObserver(checkScroll)
+    observer.observe(el)
     el.addEventListener('scroll', checkScroll, { passive: true })
-    window.addEventListener('resize', checkScroll)
     return () => {
+      observer.disconnect()
       el.removeEventListener('scroll', checkScroll)
-      window.removeEventListener('resize', checkScroll)
+      stopMomentum()
     }
-  }, [checkScroll])
+  }, [checkScroll, stopMomentum])
 
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = (direction: -1 | 1) => {
     const el = scrollRef.current
     if (!el) return
-    const cardWidth = el.querySelector(':scope > div')?.clientWidth ?? 260
-    const distance = cardWidth + 16
-    el.scrollBy({ left: direction === 'left' ? -distance : distance, behavior: 'smooth' })
+    stopMomentum()
+    el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' })
   }
 
-  /* ── Free drag-to-scroll with momentum ── */
-  const isDragging = useRef(false)
-  const hasDragged = useRef(false)
-  const startX = useRef(0)
-  const scrollStart = useRef(0)
-  
-  // Momentum variables
-  const lastClientX = useRef(0)
-  const velocity = useRef(0)
-  const momentumId = useRef<number>(0)
-  const timestamp = useRef<number>(0)
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    stopMomentum()
+    // Touch scrolling uses the browser's native inertia and vertical gesture handling.
+    if (event.pointerType !== 'mouse' || event.button !== 0) return
     const el = scrollRef.current
     if (!el) return
-    
-    cancelAnimationFrame(momentumId.current)
-    
-    isDragging.current = true
-    hasDragged.current = false
-    startX.current = e.clientX
-    lastClientX.current = e.clientX
-    scrollStart.current = el.scrollLeft
-    timestamp.current = performance.now()
-    velocity.current = 0
-    
-    el.style.cursor = 'grabbing'
-    el.setPointerCapture(e.pointerId)
+    suppressClickUntil.current = 0
+    pointer.current = {
+      active: true, id: event.pointerId, startX: event.clientX, scrollStart: el.scrollLeft,
+      lastX: event.clientX, lastTime: performance.now(), velocity: 0, dragged: false,
+    }
   }
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging.current) return
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current
-    if (!el) return
-    
-    const dx = e.clientX - startX.current
-    if (Math.abs(dx) > 5) {
-      hasDragged.current = true
+    const state = pointer.current
+    if (!el || !state.active || state.id !== event.pointerId) return
+    const dx = event.clientX - state.startX
+    if (!state.dragged && Math.abs(dx) < 5) return
+    if (!state.dragged) {
+      state.dragged = true
+      el.setPointerCapture(event.pointerId)
+      el.style.cursor = 'grabbing'
     }
-    
-    el.scrollLeft = scrollStart.current - dx
-    
-    // Calculate velocity for momentum
+    event.preventDefault()
+    el.scrollLeft = state.scrollStart - dx
     const now = performance.now()
-    const dt = now - timestamp.current
-    const dxMove = e.clientX - lastClientX.current
-    
+    const dt = now - state.lastTime
     if (dt > 0) {
-      velocity.current = dxMove / dt
+      const nextVelocity = -(event.clientX - state.lastX) / dt
+      state.velocity = state.velocity * 0.25 + nextVelocity * 0.75
     }
-    
-    lastClientX.current = e.clientX
-    timestamp.current = now
+    state.lastX = event.clientX
+    state.lastTime = now
   }
 
-  const applyMomentum = () => {
+  const finishDrag = (event: PointerEvent<HTMLDivElement>, allowMomentum: boolean) => {
     const el = scrollRef.current
-    if (!el) return
-    
-    if (Math.abs(velocity.current) > 0.05) {
-      el.scrollLeft -= velocity.current * 16 // roughly 1 frame at 60fps
-      velocity.current *= 0.95 // Friction
-      momentumId.current = requestAnimationFrame(applyMomentum)
-    }
-  }
+    const state = pointer.current
+    if (!el || !state.active || state.id !== event.pointerId) return
+    state.active = false
+    el.style.cursor = 'grab'
+    if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId)
+    if (!state.dragged) return
+    suppressClickUntil.current = performance.now() + 350
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!isDragging.current) return
-    isDragging.current = false
-    
-    const el = scrollRef.current
-    if (el) {
-      el.style.cursor = 'grab'
-      el.releasePointerCapture(e.pointerId)
-      
-      // Only apply momentum if the last move was recent
-      if (performance.now() - timestamp.current < 100) {
-        momentumId.current = requestAnimationFrame(applyMomentum)
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!allowMomentum || reduceMotion || performance.now() - state.lastTime > 100) return
+    let velocity = Math.max(-3, Math.min(3, state.velocity))
+    let lastTime = performance.now()
+    const coast = (now: number) => {
+      const dt = Math.min(32, now - lastTime)
+      lastTime = now
+      const previous = el.scrollLeft
+      el.scrollLeft += velocity * dt
+      velocity *= Math.exp(-dt / 190)
+      if (Math.abs(velocity) > 0.025 && Math.abs(el.scrollLeft - previous) > 0.1) {
+        momentumId.current = requestAnimationFrame(coast)
+      } else {
+        momentumId.current = 0
       }
     }
+    momentumId.current = requestAnimationFrame(coast)
   }
-  
-  const handleCardClick = (product: Product, e: React.MouseEvent) => {
-    if (hasDragged.current) {
-      e.preventDefault()
-      e.stopPropagation()
-      return
-    }
+
+  const handleOpenProduct = (product: Product, event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+    event.preventDefault()
+    stopMomentum()
     setSelectedProduct(product)
   }
 
+  const closeProduct = useCallback(() => setSelectedProduct(null), [])
+
   return (
     <section id={id} className="py-12 lg:py-16">
-      <div className="max-w-7xl mx-auto px-4 md:px-6">
-        {/* Title */}
+      <div className="mx-auto max-w-7xl px-4 md:px-6">
         <motion.h2
-          className="font-serif text-2xl md:text-3xl text-graphite mb-8"
+          className="mb-8 font-serif text-2xl text-graphite md:text-3xl"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-50px' }}
@@ -151,76 +143,66 @@ export default function ProductRowSection({ id, title, products }: ProductRowSec
           {title}
         </motion.h2>
 
-        {/* Row container */}
-        <div className="relative group/row">
-          {/* Left arrow */}
+        <div className="group/row relative">
           {canScrollLeft && (
             <button
-              onClick={() => scroll('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full border border-stone/40 bg-ivory/90 backdrop-blur-sm flex items-center justify-center text-graphite hover:bg-champagne/20 transition-all opacity-0 group-hover/row:opacity-100 -translate-x-2 shadow-sm"
+              type="button"
+              onClick={() => scroll(-1)}
+              className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-x-2 -translate-y-1/2 items-center justify-center rounded-full border border-stone/40 bg-ivory/95 text-graphite shadow-sm transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-champagne"
               aria-label="Előző termékek"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M10 3L5 8L10 13" />
-              </svg>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>
             </button>
           )}
-
-          {/* Right arrow */}
           {canScrollRight && (
             <button
-              onClick={() => scroll('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full border border-stone/40 bg-ivory/90 backdrop-blur-sm flex items-center justify-center text-graphite hover:bg-champagne/20 transition-all opacity-0 group-hover/row:opacity-100 translate-x-2 shadow-sm"
+              type="button"
+              onClick={() => scroll(1)}
+              className="absolute right-0 top-1/2 z-10 flex h-10 w-10 translate-x-2 -translate-y-1/2 items-center justify-center rounded-full border border-stone/40 bg-ivory/95 text-graphite shadow-sm transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-champagne"
               aria-label="Következő termékek"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M6 3L11 8L6 13" />
-              </svg>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>
             </button>
           )}
 
-          {/* Scroll container */}
           <div
             ref={scrollRef}
-            className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide cursor-grab touch-pan-y pb-6"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            className="scrollbar-hide flex cursor-grab select-none gap-4 overflow-x-auto overscroll-x-contain pb-6 md:gap-5"
+            style={{ scrollbarWidth: 'none', touchAction: 'pan-x pan-y', scrollSnapType: 'none', scrollBehavior: 'auto' }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
+            onPointerUp={(event) => finishDrag(event, true)}
+            onPointerCancel={(event) => finishDrag(event, false)}
+            onPointerLeave={(event) => { if (!pointer.current.dragged) finishDrag(event, false) }}
+            onLostPointerCapture={(event) => finishDrag(event, false)}
+            onDragStart={(event) => event.preventDefault()}
+            onWheel={stopMomentum}
+            onClickCapture={(event) => {
+              if (performance.now() < suppressClickUntil.current) {
+                event.preventDefault()
+                event.stopPropagation()
+              }
+            }}
           >
             {products.map((product, index) => (
               <motion.div
                 key={product.id}
-                className="flex-shrink-0 w-[78vw] md:w-[260px] lg:w-[280px]"
+                className="w-[78vw] flex-shrink-0 md:w-[260px] lg:w-[280px]"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-30px' }}
                 transition={{ duration: 0.5, delay: index * 0.05 }}
               >
-                <div onClick={(e) => handleCardClick(product, e)} className="h-full">
-                  <ProductCard product={product} onClick={() => {}} />
-                </div>
+                <ProductCard product={product} onClick={(event) => handleOpenProduct(product, event)} />
               </motion.div>
             ))}
           </div>
 
-          {/* Fade edges */}
-          {canScrollLeft && (
-            <div className="absolute left-0 top-0 bottom-6 w-8 md:w-12 bg-gradient-to-r from-ivory to-transparent pointer-events-none z-[5]" />
-          )}
-          {canScrollRight && (
-            <div className="absolute right-0 top-0 bottom-6 w-8 md:w-12 bg-gradient-to-l from-ivory to-transparent pointer-events-none z-[5]" />
-          )}
+          {canScrollLeft && <div className="pointer-events-none absolute bottom-6 left-0 top-0 z-[5] w-8 bg-gradient-to-r from-ivory to-transparent md:w-12" />}
+          {canScrollRight && <div className="pointer-events-none absolute bottom-6 right-0 top-0 z-[5] w-8 bg-gradient-to-l from-ivory to-transparent md:w-12" />}
         </div>
       </div>
-
-      {/* Quick view */}
-      <QuickView
-        product={selectedProduct}
-        isOpen={!!selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-      />
+      <QuickView product={selectedProduct} isOpen={!!selectedProduct} onClose={closeProduct} />
     </section>
   )
 }

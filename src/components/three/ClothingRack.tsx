@@ -1,272 +1,335 @@
 'use client'
 
-import React, { useRef, useState, useEffect, useMemo } from 'react'
+import { Suspense, useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import * as THREE from 'three'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { ContactShadows, Environment } from '@react-three/drei'
-import { Product } from '@/types'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { ContactShadows, useTexture } from '@react-three/drei'
+import type { Product } from '@/types'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
+import ClothingRackFallback from './ClothingRackFallback'
 
 interface ClothingRackProps {
   products: Product[]
   activeIndex: number
   onActiveChange: (index: number) => void
+  onOpenProduct: (product: Product) => void
   isVisible?: boolean
 }
 
-const RACK_RADIUS = 2.8
-const RING_HEIGHT = 2.5
-const ITEM_HEIGHT = 1.0
+const TAU = Math.PI * 2
+const RACK_RADIUS = 3.05
+const RAIL_HEIGHT = 2.15
+const GARMENT_HEIGHT = 2.9
+const GARMENT_WIDTH = GARMENT_HEIGHT * 2 / 3
 
-const Hanger = () => (
-  <group position={[0, 1.35, 0]}>
-    {/* Hook */}
-    <mesh position={[0, 0.12, 0]} rotation={[0, 0, -Math.PI / 4]}>
-      <torusGeometry args={[0.05, 0.01, 8, 24, Math.PI * 1.5]} />
-      <meshStandardMaterial color="#D4C5A9" metalness={1.0} roughness={0.15} />
-    </mesh>
-    {/* Neck */}
-    <mesh position={[0, 0.03, 0]}>
-      <cylinderGeometry args={[0.01, 0.01, 0.08, 8]} />
-      <meshStandardMaterial color="#D4C5A9" metalness={1.0} roughness={0.15} />
-    </mesh>
-    {/* Shoulders */}
-    <mesh position={[-0.3, -0.05, 0]} rotation={[0, 0, Math.PI / 2 + 0.15]}>
-      <cylinderGeometry args={[0.01, 0.01, 0.6, 8]} />
-      <meshStandardMaterial color="#D4C5A9" metalness={1.0} roughness={0.15} />
-    </mesh>
-    <mesh position={[0.3, -0.05, 0]} rotation={[0, 0, Math.PI / 2 - 0.15]}>
-      <cylinderGeometry args={[0.01, 0.01, 0.6, 8]} />
-      <meshStandardMaterial color="#D4C5A9" metalness={1.0} roughness={0.15} />
-    </mesh>
-  </group>
-)
+interface RackMotion {
+  rotation: number
+  velocity: number
+  target: number | null
+  pointerId: number | null
+  startX: number
+  startY: number
+  lastX: number
+  lastTime: number
+  dragged: boolean
+  interacted: boolean
+  hovering: boolean
+  suppressClickUntil: number
+  reportedIndex: number
+}
 
-interface GarmentProps {
+function MetalHanger({ halfWidth, shoulderY }: { halfWidth: number; shoulderY: number }) {
+  const shape = useMemo(() => {
+    const shoulders = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, -0.17, 0),
+      new THREE.Vector3(-halfWidth * 0.4, -0.17 + (shoulderY + 0.17) * 0.4, 0),
+      new THREE.Vector3(-halfWidth, shoulderY, 0),
+      new THREE.Vector3(-halfWidth + 0.02, shoulderY - 0.035, 0),
+      new THREE.Vector3(halfWidth - 0.02, shoulderY - 0.035, 0),
+      new THREE.Vector3(halfWidth, shoulderY, 0),
+      new THREE.Vector3(halfWidth * 0.4, -0.17 + (shoulderY + 0.17) * 0.4, 0),
+      new THREE.Vector3(0, -0.17, 0),
+    ], false, 'centripetal')
+    const hook = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, -0.17, 0),
+      new THREE.Vector3(0, -0.09, 0),
+      new THREE.Vector3(0.055, -0.04, 0),
+      new THREE.Vector3(0.066, 0.025, 0),
+      new THREE.Vector3(0.012, 0.075, 0),
+      new THREE.Vector3(-0.052, 0.055, 0),
+      new THREE.Vector3(-0.063, 0.012, 0),
+    ])
+    return { shoulders, hook }
+  }, [halfWidth, shoulderY])
+
+  return (
+    <group>
+      <mesh>
+        <tubeGeometry args={[shape.shoulders, 48, 0.014, 6, false]} />
+        <meshStandardMaterial color="#bda987" metalness={0.62} roughness={0.27} />
+      </mesh>
+      <mesh>
+        <tubeGeometry args={[shape.hook, 24, 0.014, 6, false]} />
+        <meshStandardMaterial color="#c9b792" metalness={0.65} roughness={0.24} />
+      </mesh>
+    </group>
+  )
+}
+
+function Garment({ product, index, total, motionRef, onOpenProduct }: {
   product: Product
   index: number
   total: number
-  activeDiff: number
-  onClick: () => void
-}
-
-const Garment = ({ product, index, total, activeDiff, onClick }: GarmentProps) => {
-  const angle = (index / total) * Math.PI * 2
-  const x = Math.sin(angle) * RACK_RADIUS
-  const z = Math.cos(angle) * RACK_RADIUS
-  
-  const meshRef = useRef<THREE.Mesh>(null)
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null)
-  
+  motionRef: React.RefObject<RackMotion>
+  onOpenProduct: (product: Product) => void
+}) {
+  const angle = index / total * TAU
+  const group = useRef<THREE.Group>(null)
+  const material = useRef<THREE.MeshBasicMaterial>(null)
+  const sourceTexture = useTexture(product.transparentGarmentImage)
   const texture = useMemo(() => {
-    try {
-      if (product.transparentGarmentImage) {
-        return new THREE.TextureLoader().load(product.transparentGarmentImage, undefined, undefined, () => {
-          console.warn('Failed to load texture', product.transparentGarmentImage)
-        })
+    const copy = sourceTexture.clone()
+    copy.colorSpace = THREE.SRGBColorSpace
+    copy.anisotropy = 4
+    copy.needsUpdate = true
+    return copy
+  }, [sourceTexture])
+  const alphaMask = useMemo(() => {
+    const image = texture.image as HTMLImageElement
+    const canvas = document.createElement('canvas')
+    canvas.width = 256
+    canvas.height = Math.round(256 * image.height / image.width)
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    if (!context) return null
+    context.drawImage(image, 0, 0, canvas.width, canvas.height)
+    const data = context.getImageData(0, 0, canvas.width, canvas.height).data
+    let top = canvas.height
+    let left = canvas.width
+    let right = 0
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        if (data[(y * canvas.width + x) * 4 + 3] > 96) {
+          top = Math.min(top, y)
+          if (y < top + canvas.height * 0.035) {
+            left = Math.min(left, x)
+            right = Math.max(right, x)
+          }
+        }
       }
-    } catch (e) {}
-    return null
-  }, [product.transparentGarmentImage])
+      if (y > top + canvas.height * 0.035) break
+    }
+    return {
+      data, width: canvas.width, height: canvas.height,
+      hangerWidth: THREE.MathUtils.clamp((right - left) / canvas.width * GARMENT_WIDTH / 2, 0.27, 0.6),
+      shoulderY: Math.min(-0.27, -0.13 - top / canvas.height * GARMENT_HEIGHT),
+    }
+  }, [texture])
+
+  useEffect(() => () => texture.dispose(), [texture])
 
   useFrame(() => {
-    if (!meshRef.current || !materialRef.current) return
-    
-    let targetScale = 1.0
-    let targetOpacity = 1.0
-    
-    if (activeDiff === 0) {
-      targetScale = 1.0
-      targetOpacity = 1.0
-    } else if (activeDiff === 1) {
-      targetScale = 0.95
-      targetOpacity = 0.9
-    } else if (activeDiff === 2) {
-      targetScale = 0.85
-      targetOpacity = 0.7
-    } else {
-      targetScale = 0.75
-      targetOpacity = 0.5
-    }
-
-    meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1)
-    materialRef.current.opacity = THREE.MathUtils.lerp(materialRef.current.opacity, targetOpacity, 0.1)
+    if (!group.current || !material.current) return
+    const worldAngle = angle + motionRef.current.rotation
+    // Front-facing cutouts remain readable as they travel around the rail.
+    group.current.rotation.y = -motionRef.current.rotation - Math.sin(worldAngle) * 0.16
+    material.current.opacity = THREE.MathUtils.lerp(0.72, 1, (Math.cos(worldAngle) + 1) / 2)
   })
 
+  const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    if (motionRef.current.dragged || performance.now() < motionRef.current.suppressClickUntil) return
+    if (event.uv && alphaMask) {
+      const x = Math.min(alphaMask.width - 1, Math.floor(event.uv.x * alphaMask.width))
+      const y = Math.min(alphaMask.height - 1, Math.floor((1 - event.uv.y) * alphaMask.height))
+      if (alphaMask.data[(y * alphaMask.width + x) * 4 + 3] < 24) return
+    }
+    event.stopPropagation()
+    motionRef.current.velocity = 0
+    motionRef.current.interacted = true
+    onOpenProduct(product)
+  }
+
   return (
-    <group position={[x, ITEM_HEIGHT, z]} rotation={[0, angle, 0]}>
-      <Hanger />
-      <mesh ref={meshRef} onClick={onClick} position={[0, 0.1, 0]}>
-        <planeGeometry args={[1.6, 2.4]} />
-        <meshStandardMaterial 
-          ref={materialRef}
-          transparent={true}
-          blending={THREE.MultiplyBlending}
-          side={THREE.DoubleSide}
-          color={texture ? '#ffffff' : (product.colorHex || '#d8d3cb')}
+    <group ref={group} position={[Math.sin(angle) * RACK_RADIUS, RAIL_HEIGHT, Math.cos(angle) * RACK_RADIUS]}>
+      <MetalHanger halfWidth={alphaMask?.hangerWidth ?? 0.48} shoulderY={alphaMask?.shoulderY ?? -0.35} />
+      <mesh position={[0, -GARMENT_HEIGHT / 2 - 0.13, 0.016]} onClick={handleClick}>
+        <planeGeometry args={[GARMENT_WIDTH, GARMENT_HEIGHT]} />
+        <meshBasicMaterial
+          ref={material}
           map={texture}
+          transparent
+          alphaTest={0.04}
+          depthWrite
+          side={THREE.DoubleSide}
+          blending={THREE.NormalBlending}
+          toneMapped={false}
         />
       </mesh>
     </group>
   )
 }
 
-function Scene({ products, activeIndex, onActiveChange }: ClothingRackProps) {
-  const groupRef = useRef<THREE.Group>(null)
-  const { invalidate } = useThree()
-  
-  const stateRef = useRef({
-    isDragging: false,
-    rotationVelocity: 0,
-    lastX: 0,
-    autoRotate: true,
-    startX: 0,
-    dragThresholdMet: false
-  })
-
-  const handlePointerDown = (e: any) => {
-    e.stopPropagation()
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX
-    stateRef.current.startX = clientX
-    stateRef.current.lastX = clientX
-    stateRef.current.isDragging = true
-    stateRef.current.dragThresholdMet = false
-    stateRef.current.autoRotate = false
-  }
-
-  const handlePointerMove = (e: any) => {
-    if (!stateRef.current.isDragging) return
-    e.stopPropagation()
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX
-    
-    if (!stateRef.current.dragThresholdMet) {
-      if (Math.abs(clientX - stateRef.current.startX) > 5) {
-        stateRef.current.dragThresholdMet = true
-      } else {
-        return
-      }
-    }
-
-    const deltaX = clientX - stateRef.current.lastX
-    stateRef.current.rotationVelocity = deltaX * 0.005
-    stateRef.current.lastX = clientX
-    invalidate()
-  }
-
-  const handlePointerUp = () => {
-    stateRef.current.isDragging = false
-    setTimeout(() => {
-      stateRef.current.autoRotate = true
-    }, 3000)
-  }
-
-  useFrame(() => {
-    if (!groupRef.current) return
-    
-    let needsInvalidate = false
-    const s = stateRef.current
-
-    if (s.isDragging) {
-      groupRef.current.rotation.y += s.rotationVelocity
-      needsInvalidate = true
-    } else {
-      if (Math.abs(s.rotationVelocity) > 0.0001) {
-        groupRef.current.rotation.y += s.rotationVelocity
-        s.rotationVelocity *= 0.95
-        needsInvalidate = true
-      } else if (s.autoRotate) {
-        groupRef.current.rotation.y += 0.0015
-        needsInvalidate = true
-      }
-    }
-
-    if (needsInvalidate) invalidate()
-
-    const totalItems = products.length
-    if (totalItems > 0 && Math.abs(s.rotationVelocity) > 0.001) {
-      let currentRot = groupRef.current.rotation.y % (Math.PI * 2)
-      if (currentRot < 0) currentRot += Math.PI * 2
-      
-      const segmentAngle = (Math.PI * 2) / totalItems
-      const newActiveIndex = (totalItems - Math.round(currentRot / segmentAngle)) % totalItems
-      
-      if (newActiveIndex !== activeIndex) {
-         onActiveChange(newActiveIndex)
-      }
-    }
-  })
+function Scene({ products, activeIndex, onActiveChange, onOpenProduct, isVisible, motionRef, reducedMotion }: ClothingRackProps & {
+  motionRef: React.RefObject<RackMotion>
+  reducedMotion: boolean
+}) {
+  const group = useRef<THREE.Group>(null)
+  const { invalidate, camera } = useThree()
 
   useEffect(() => {
-    if (groupRef.current && !stateRef.current.isDragging && Math.abs(stateRef.current.rotationVelocity) < 0.001 && products.length > 0) {
-      const segmentAngle = (Math.PI * 2) / products.length
-      const targetRotation = -activeIndex * segmentAngle
-      groupRef.current.rotation.y = targetRotation
-      invalidate()
+    camera.lookAt(0, 0.55, 0)
+    camera.updateProjectionMatrix()
+    invalidate()
+  }, [camera, invalidate])
+
+  useEffect(() => {
+    const state = motionRef.current
+    if (activeIndex !== state.reportedIndex && products.length) {
+      const desired = -activeIndex / products.length * TAU
+      const shortest = THREE.MathUtils.euclideanModulo(desired - state.rotation + Math.PI, TAU) - Math.PI
+      state.target = state.rotation + shortest
+      state.velocity = 0
+      state.interacted = true
+      state.reportedIndex = activeIndex
     }
-  }, [activeIndex, products.length, invalidate])
+    invalidate()
+  }, [activeIndex, products.length, motionRef, invalidate])
+
+  useEffect(() => { invalidate() }, [isVisible, reducedMotion, invalidate])
+
+  useFrame((_, elapsed) => {
+    if (!group.current || !isVisible || !products.length) return
+    const delta = Math.min(elapsed, 0.05)
+    const state = motionRef.current
+    let moving = state.pointerId !== null
+
+    if (state.pointerId === null) {
+      if (state.target !== null) {
+        state.rotation = reducedMotion ? state.target : THREE.MathUtils.damp(state.rotation, state.target, 9, delta)
+        if (Math.abs(state.rotation - state.target) < 0.0004) {
+          state.rotation = state.target
+          state.target = null
+        }
+        moving = true
+      } else if (Math.abs(state.velocity) > 0.008 && !reducedMotion) {
+        state.rotation += state.velocity * delta
+        state.velocity *= Math.exp(-4.8 * delta)
+        moving = true
+      } else if (!state.interacted && !state.hovering && !reducedMotion) {
+        state.rotation += 0.045 * delta
+        moving = true
+      }
+    }
+
+    group.current.rotation.y = state.rotation
+    if (state.target === null) {
+      const index = THREE.MathUtils.euclideanModulo(Math.round(-state.rotation / TAU * products.length), products.length)
+      if (index !== state.reportedIndex) {
+        state.reportedIndex = index
+        onActiveChange(index)
+      }
+    }
+    if (moving) invalidate()
+  })
 
   return (
     <>
-      <ambientLight intensity={0.9} />
-      <directionalLight position={[5, 10, 5]} intensity={1.5} />
-      <Environment preset="city" />
-      
-      <mesh 
-        position={[0, ITEM_HEIGHT, 0]} 
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerOut={handlePointerUp}
-        visible={false}
-      >
-        <cylinderGeometry args={[RACK_RADIUS + 1.5, RACK_RADIUS + 1.5, 6, 32]} />
-        <meshBasicMaterial transparent opacity={0} />
-      </mesh>
-
-      <group ref={groupRef}>
-        <mesh position={[0, RING_HEIGHT, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[RACK_RADIUS, 0.02, 32, 100]} />
-          <meshStandardMaterial color="#D4C5A9" metalness={1.0} roughness={0.1} />
+      <ambientLight intensity={1.7} />
+      <directionalLight position={[-4, 7, 6]} intensity={3.2} color="#fff7eb" />
+      <directionalLight position={[5, 4, -3]} intensity={2} color="#ffffff" />
+      <group ref={group}>
+        <mesh position={[0, RAIL_HEIGHT, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[RACK_RADIUS, 0.033, 10, 120]} />
+          <meshStandardMaterial color="#cbbd9f" metalness={0.68} roughness={0.24} />
         </mesh>
-
-        {products.map((product, index) => {
-           const total = products.length
-           let diff = Math.abs(index - activeIndex)
-           if (diff > total / 2) diff = total - diff
-           
-           return (
-             <Garment 
-               key={product.id} 
-               product={product} 
-               index={index} 
-               total={total}
-               activeDiff={diff}
-               onClick={() => onActiveChange(index)}
-             />
-           )
-        })}
+        {products.map((product, index) => (
+          <Suspense key={product.id} fallback={null}>
+            <Garment product={product} index={index} total={products.length} motionRef={motionRef} onOpenProduct={onOpenProduct} />
+          </Suspense>
+        ))}
       </group>
-      
-      <ContactShadows position={[0, -0.5, 0]} opacity={0.25} blur={2.5} />
+      <ContactShadows position={[0, -1.08, 0]} opacity={0.16} blur={3} scale={13} far={6} frames={1} resolution={256} />
     </>
   )
 }
 
-export default function ClothingRack({ products, activeIndex, onActiveChange, isVisible = true }: ClothingRackProps) {
-  if (!isVisible) return null
+export default function ClothingRack({ products, activeIndex, onActiveChange, onOpenProduct, isVisible = true }: ClothingRackProps) {
+  const reducedMotion = useReducedMotion()
+  const invalidateRef = useRef<() => void>(() => {})
+  const motion = useRef<RackMotion>({
+    rotation: -activeIndex / Math.max(1, products.length) * TAU,
+    velocity: 0, target: null, pointerId: null,
+    startX: 0, startY: 0, lastX: 0, lastTime: 0,
+    dragged: false, interacted: false, hovering: false,
+    suppressClickUntil: 0, reportedIndex: activeIndex,
+  })
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || event.button !== 0) return
+    const state = motion.current
+    state.pointerId = event.pointerId
+    state.startX = state.lastX = event.clientX
+    state.startY = event.clientY
+    state.lastTime = performance.now()
+    state.dragged = false
+    state.velocity = 0
+    state.target = null
+    state.interacted = true
+    invalidateRef.current()
+  }
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const state = motion.current
+    if (state.pointerId !== event.pointerId) return
+    const dx = event.clientX - state.startX
+    if (!state.dragged) {
+      if (Math.abs(dx) < 6) return
+      if (event.pointerType === 'touch' && Math.abs(event.clientY - state.startY) > Math.abs(dx)) return
+      state.dragged = true
+      event.currentTarget.setPointerCapture(event.pointerId)
+    }
+    const now = performance.now()
+    const amount = (event.clientX - state.lastX) * 0.0055
+    const elapsed = Math.max(8, now - state.lastTime) / 1000
+    state.rotation += amount
+    state.velocity = THREE.MathUtils.clamp(amount / elapsed, -2.6, 2.6)
+    state.lastX = event.clientX
+    state.lastTime = now
+    event.preventDefault()
+    invalidateRef.current()
+  }
+
+  const handlePointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const state = motion.current
+    if (state.pointerId !== event.pointerId) return
+    if (state.dragged) state.suppressClickUntil = performance.now() + 350
+    if (performance.now() - state.lastTime > 100 || event.type === 'pointercancel') state.velocity = 0
+    state.pointerId = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+    invalidateRef.current()
+  }
 
   return (
-    <div className="w-full h-full cursor-grab active:cursor-grabbing touch-none">
-      <Canvas 
-        frameloop="demand" 
+    <div
+      className="w-full h-full cursor-grab active:cursor-grabbing select-none"
+      style={{ touchAction: 'pan-y' }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+      onPointerEnter={() => { motion.current.hovering = true }}
+      onPointerLeave={() => { motion.current.hovering = false; invalidateRef.current() }}
+      onDragStart={(event) => event.preventDefault()}
+      aria-label="Forgatható ruhatartó. Húzd oldalra, vagy válassz egy ruhát."
+    >
+      <Canvas
+        frameloop="demand"
         dpr={[1, 1.5]}
-        camera={{ position: [0, 2.2, 8.5], fov: 40 }}
+        gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+        camera={{ position: [0, 3.1, 12.8], fov: 37 }}
+        onCreated={({ invalidate }) => { invalidateRef.current = invalidate }}
+        fallback={<ClothingRackFallback products={products} activeIndex={activeIndex} onActiveChange={onActiveChange} onOpenProduct={onOpenProduct} isVisible={isVisible} />}
       >
-        <Scene 
-          products={products} 
-          activeIndex={activeIndex} 
-          onActiveChange={onActiveChange} 
-          isVisible={isVisible}
-        />
+        <Scene products={products} activeIndex={activeIndex} onActiveChange={onActiveChange} onOpenProduct={onOpenProduct} isVisible={isVisible} motionRef={motion} reducedMotion={reducedMotion} />
       </Canvas>
     </div>
   )

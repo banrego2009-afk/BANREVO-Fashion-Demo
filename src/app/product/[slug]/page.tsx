@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import { brand } from '@/config/brand.config'
-import { getDetailProducts, getProductBySlug } from '@/data/products'
+import { allProducts, getProductBySlug } from '@/data/products'
 import { notFound } from 'next/navigation'
 import ProductDetail from '@/components/product/ProductDetail'
 
@@ -9,7 +9,7 @@ interface ProductPageProps {
 }
 
 export async function generateStaticParams() {
-  return getDetailProducts().map((product) => ({
+  return allProducts.map((product) => ({
     slug: product.slug,
   }))
 }
@@ -28,6 +28,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     openGraph: {
       title: `${product.name} | ${brand.name}`,
       description: product.shortDescription,
+      images: [{ url: product.images[0], alt: product.name }],
     },
   }
 }
@@ -36,7 +37,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params
   const product = getProductBySlug(slug)
 
-  if (!product || !product.detailAvailable) {
+  if (!product) {
     notFound()
   }
 

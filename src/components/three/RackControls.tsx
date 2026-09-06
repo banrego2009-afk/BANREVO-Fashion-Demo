@@ -1,6 +1,5 @@
 'use client'
 
-import React, { useEffect } from 'react'
 import { Product } from '@/types'
 
 interface RackControlsProps {
@@ -10,22 +9,13 @@ interface RackControlsProps {
 }
 
 export default function RackControls({ product, onPrev, onNext }: RackControlsProps) {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') onPrev()
-      if (e.key === 'ArrowRight') onNext()
-    }
-    
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onPrev, onNext])
-
   if (!product) return null
 
   return (
     <div className="relative flex justify-center items-center mt-4 gap-6">
       {/* Left arrow */}
       <button 
+        type="button"
         onClick={onPrev}
         aria-label="Előző ruha"
         className="w-10 h-10 rounded-full border border-stone/30 flex items-center justify-center text-graphite hover:border-graphite hover:bg-cream/50 transition-colors"
@@ -37,6 +27,7 @@ export default function RackControls({ product, onPrev, onNext }: RackControlsPr
 
       {/* Right arrow */}
       <button 
+        type="button"
         onClick={onNext}
         aria-label="Következő ruha"
         className="w-10 h-10 rounded-full border border-stone/30 flex items-center justify-center text-graphite hover:border-graphite hover:bg-cream/50 transition-colors"

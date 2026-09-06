@@ -761,6 +761,28 @@ export const accessoryProducts: Product[] = [
 
 export const allProducts: Product[] = [...rackProducts, ...collectionProducts, ...accessoryProducts]
 
+// Publish only completed assets. Keep existing images for unfinished products;
+// do not present the previous, unrelated models as additional camera angles.
+const completedStudioImages = new Set([
+  'alina-selyem-midi-ruha', 'mira-noi-szett', 'lilla-pliszirozott-ruha',
+  'nora-gyapjukabat', 'reka-kotott-szett', 'sara-strukturalt-blezer',
+  'dora-szaten-szett', 'hanna-minimalista-top', 'boglarka-nadragos-szett',
+  'virag-trench-coat', 'aria-bor-szandal', 'luna-bortaska',
+  'sofia-bor-ov', 'elena-napszemuveg',
+])
+
+for (const product of allProducts) {
+  product.detailAvailable = true
+  product.status = 'available'
+  if (completedStudioImages.has(product.slug)) {
+    product.images = [`/images/collection-2026/${product.slug}/front.webp`]
+    product.viewerAssets = []
+  }
+  if (product.slug === 'alina-selyem-midi-ruha') {
+    product.transparentGarmentImage = '/images/collection-2026/alina-selyem-midi-ruha/cutout.webp'
+  }
+}
+
 export function getProductBySlug(slug: string): Product | undefined {
   return allProducts.find((p) => p.slug === slug)
 }

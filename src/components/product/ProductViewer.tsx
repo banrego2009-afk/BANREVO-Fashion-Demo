@@ -1,103 +1,127 @@
-'use client';
+'use client'
 
-import { useState, useRef } from 'react';
-import { Product } from '@/types';
-import FallbackImage from '@/components/ui/FallbackImage';
+import { useRef, useState } from 'react'
+import Image from 'next/image'
+import type { Product } from '@/types'
 
 interface ProductViewerProps {
-  product: Product;
+  product: Product
+  compact?: boolean
+  eager?: boolean
 }
 
-export default function ProductViewer({ product }: ProductViewerProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const startXRef = useRef<number | null>(null);
-  const startIndexRef = useRef<number>(0);
+function viewLabel(src: string, index: number, accessories: boolean) {
+  if (/\/back\./.test(src)) return 'Hátulnézet'
+  if (/\/side\./.test(src)) return 'Oldalnézet'
+  if (/\/detail\./.test(src)) return 'Részlet'
+  if (index === 0) return accessories ? 'Termékfotó' : 'Elölnézet'
+  return `Nézet ${index + 1}`
+}
 
-  const images = product.viewerAssets?.length ? product.viewerAssets : product.images;
-  const hasMultipleImages = images.length > 1;
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (!hasMultipleImages) return;
-    setIsDragging(true);
-    startXRef.current = e.clientX;
-    startIndexRef.current = currentIndex;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging || startXRef.current === null || !hasMultipleImages) return;
-    
-    const deltaX = e.clientX - startXRef.current;
-    const pixelsPerFrame = 30;
-    const frameOffset = Math.floor(deltaX / pixelsPerFrame);
-    
-    let newIndex = (startIndexRef.current - frameOffset) % images.length;
-    if (newIndex < 0) {
-      newIndex += images.length;
-    }
-    
-    setCurrentIndex(newIndex);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!hasMultipleImages) return;
-    setIsDragging(false);
-    startXRef.current = null;
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-  };
+function Gallery({ product, compact = false, eager = false }: ProductViewerProps) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const pointerStart = useRef<{ x: number; y: number; id: number } | null>(null)
+  const images = [...new Set(product.images)]
+  const multiple = images.length > 1
+  const accessories = product.group === 'accessories'
+  const selectRelative = (direction: number) => {
+    setCurrentIndex((index) => (index + direction + images.length) % images.length)
+  }
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full">
-      <div 
-        className={`relative w-full aspect-[3/4] bg-stone/10 rounded-sm overflow-hidden ${hasMultipleImages ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
-        style={{ touchAction: hasMultipleImages ? 'pan-y' : 'auto' }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+    <div
+      className="w-full min-w-0"
+      role="region"
+      aria-label={`${product.name} – képgaléria`}
+      onKeyDown={(event) => {
+        if (!multiple) return
+        if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+          event.preventDefault()
+          event.stopPropagation()
+          selectRelative(event.key === 'ArrowRight' ? 1 : -1)
+        }
+      }}
+    >
+      <div
+        className={`relative mx-auto w-full overflow-hidden bg-white outline-none focus-visible:ring-2 focus-visible:ring-champagne ${compact ? 'aspect-[3/4] max-h-[56svh] md:max-h-[65svh]' : 'aspect-[3/4] max-h-[76svh]'} ${multiple ? 'cursor-grab active:cursor-grabbing' : ''}`}
+        style={{ touchAction: 'pan-y' }}
+        tabIndex={multiple ? 0 : undefined}
+        aria-label={multiple ? 'Termékképek. Lapozás a bal és jobb nyíllal, vagy oldalirányú húzással.' : undefined}
+        onDragStart={(event) => event.preventDefault()}
+        onPointerDown={(event) => {
+          if (!multiple || (event.pointerType === 'mouse' && event.button !== 0)) return
+          if ((event.target as HTMLElement).closest('button')) return
+          pointerStart.current = { x: event.clientX, y: event.clientY, id: event.pointerId }
+          event.currentTarget.setPointerCapture(event.pointerId)
+        }}
+        onPointerUp={(event) => {
+          const start = pointerStart.current
+          pointerStart.current = null
+          if (!start || start.id !== event.pointerId) return
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+          const dx = event.clientX - start.x
+          const dy = event.clientY - start.y
+          if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy) * 1.25) selectRelative(dx < 0 ? 1 : -1)
+        }}
+        onPointerCancel={() => { pointerStart.current = null }}
+        onLostPointerCapture={() => { pointerStart.current = null }}
       >
-        {images.map((src, idx) => (
+        {images.map((src, index) => (
           <div
-            key={`${src}-${idx}`}
-            className="absolute inset-0 select-none transition-opacity duration-150"
-            style={{ opacity: idx === currentIndex ? 1 : 0, pointerEvents: 'none' }}
+            key={src}
+            className="absolute inset-0 transition-opacity duration-200 motion-reduce:transition-none"
+            style={{ opacity: index === currentIndex ? 1 : 0, pointerEvents: 'none' }}
+            aria-hidden={index !== currentIndex}
           >
-            <FallbackImage
+            <Image
               src={src}
-              alt={`${product.name} nézet ${idx + 1}`}
-              width={800}
-              height={1100}
-              fallbackColor={product.colorHex}
-              category={product.category}
-              productName={product.name}
-              className="object-cover w-full h-full pointer-events-none select-none"
+              alt={`${product.name} – ${viewLabel(src, index, accessories).toLocaleLowerCase('hu-HU')}`}
+              fill
+              sizes={compact ? '(max-width: 767px) 90vw, 540px' : '(max-width: 1023px) 94vw, 600px'}
+              loading={eager || index === currentIndex ? 'eager' : 'lazy'}
+              fetchPriority={eager && index === 0 ? 'high' : 'auto'}
+              draggable={false}
+              className="select-none object-contain"
             />
           </div>
         ))}
+        {multiple && (
+          <>
+            <button type="button" onClick={() => selectRelative(-1)} aria-label="Előző kép" className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone/40 bg-white/90 text-graphite transition-colors hover:bg-ivory focus-visible:outline-2 focus-visible:outline-champagne">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>
+            </button>
+            <button type="button" onClick={() => selectRelative(1)} aria-label="Következő kép" className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone/40 bg-white/90 text-graphite transition-colors hover:bg-ivory focus-visible:outline-2 focus-visible:outline-champagne">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>
+            </button>
+          </>
+        )}
       </div>
-      
-      {hasMultipleImages && (
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex gap-1.5">
-            {images.map((_, idx) => (
-              <div
-                key={idx}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  idx === currentIndex ? 'bg-graphite' : 'bg-stone/50'
-                }`}
-              />
-            ))}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-graphite/60 select-none font-medium">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M1 4v6h6M23 20v-6h-6" />
-              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-            </svg>
-            Húzd el a forgatáshoz
-          </div>
+
+      <div className="mt-3 flex items-center justify-between px-1 text-[11px] uppercase tracking-[0.14em] text-graphite/65" aria-live="polite" aria-atomic="true">
+        <span>{viewLabel(images[currentIndex] || '', currentIndex, accessories)}</span>
+        <span>{String(currentIndex + 1).padStart(2, '0')} / {String(images.length).padStart(2, '0')}</span>
+      </div>
+
+      {multiple && (
+        <div className="mt-4 flex justify-center gap-3" aria-label="Kép kiválasztása">
+          {images.map((src, index) => (
+            <button
+              key={src}
+              type="button"
+              onClick={() => setCurrentIndex(index)}
+              aria-label={viewLabel(src, index, accessories)}
+              aria-pressed={currentIndex === index}
+              className={`relative h-20 w-16 overflow-hidden border bg-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-champagne ${currentIndex === index ? 'border-graphite' : 'border-stone/30 hover:border-graphite/50'}`}
+            >
+              <Image src={src} alt="" fill sizes="64px" draggable={false} className="object-contain" />
+            </button>
+          ))}
         </div>
       )}
     </div>
-  );
+  )
+}
+
+export default function ProductViewer(props: ProductViewerProps) {
+  return <Gallery key={props.product.id} {...props} />
 }
